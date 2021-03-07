@@ -35,4 +35,8 @@ impl Toykio {
             }
         }
     }
+
+    pub fn num_of_running_tasks(&self) -> usize {
+        self.tasks.len()
+    }
 }

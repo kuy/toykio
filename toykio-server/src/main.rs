@@ -1,11 +1,21 @@
 use std::time::{Duration, Instant};
 
+use tokio::sync::oneshot;
 use toykio_runtime::{Delay, Toykio};
 use warp::Filter;
 
 #[tokio::main]
 async fn main() {
-    tokio::spawn(async {
+    let (tx, rx) = oneshot::channel();
+
+    tokio::spawn(async move {
+        match rx.await {
+            Ok(count) => println!("count = {}", count),
+            Err(_) => println!("ERROR: sender dropped"),
+        }
+    });
+
+    tokio::spawn(async move {
         let mut rt = Toykio::new();
 
         rt.spawn(async {
@@ -17,6 +27,10 @@ async fn main() {
             println!("Done");
             assert_eq!(out, "done");
         });
+
+        if let Err(_) = tx.send(rt.num_of_running_tasks()) {
+            println!("ERROR: receiver dropped");
+        }
 
         rt.run();
     });
