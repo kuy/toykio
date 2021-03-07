@@ -6,10 +6,12 @@ fn main() {
     let mut runtime = Toykio::new();
 
     runtime.spawn(async {
-        let when = Instant::now() + Duration::from_millis(10);
+        println!("Spawned");
+        let when = Instant::now() + Duration::from_millis(1500);
         let future = Delay { when };
-
+        println!("Wait 1.5sec...");
         let out = future.await;
+        println!("Done");
         assert_eq!(out, "done");
     });
 
