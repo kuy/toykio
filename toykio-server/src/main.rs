@@ -2,18 +2,13 @@ use std::convert::Infallible;
 use std::time::{Duration, Instant};
 
 use tokio::sync::{mpsc, oneshot};
-use toykio_runtime::{Delay, Toykio};
+use toykio_runtime::{Delay, Req, Toykio};
 use warp::Filter;
-
-type Responder<T> = oneshot::Sender<T>;
-
-pub struct Req {
-    pub resp: Responder<usize>,
-}
 
 pub async fn on_request(tx: mpsc::Sender<Req>) -> Result<impl warp::Reply, Infallible> {
     let (res_tx, res_rx) = oneshot::channel();
     let _ = tx.send(Req { resp: res_tx }).await;
+    println!("HOST: sent");
     match res_rx.await {
         Ok(count) => {
             println!("count = {}", count);
@@ -28,28 +23,22 @@ pub async fn on_request(tx: mpsc::Sender<Req>) -> Result<impl warp::Reply, Infal
 
 #[tokio::main]
 async fn main() {
-    let (tx, mut rx) = mpsc::channel::<Req>(32);
+    let (tx, rx) = mpsc::channel::<Req>(32);
 
     tokio::spawn(async move {
         let mut rt = Toykio::new();
 
-        tokio::spawn(async move {
-            while let Some(req) = rx.recv().await {
-                let _ = req.resp.send(10);
-            }
-        });
-
         rt.spawn(async {
             println!("Spawned");
-            let when = Instant::now() + Duration::from_millis(1500);
+            let when = Instant::now() + Duration::from_millis(100);
             let future = Delay { when };
-            println!("Wait 1.5sec...");
+            println!("Wait 100ms...");
             let out = future.await;
             println!("Done");
             assert_eq!(out, "done");
         });
 
-        rt.run();
+        rt.run(rx);
     });
 
     let handler = warp::path!("toykio")
