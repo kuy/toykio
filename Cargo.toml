@@ -2,5 +2,6 @@
 
 members = [
     "toykio-runtime",
-    "toykio-cli"
+    "toykio-cli",
+    "toykio-server"
 ]
